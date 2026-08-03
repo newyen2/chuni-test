@@ -90,15 +90,45 @@
 
         .guide {
             margin: 0 0 24px;
-            padding: 22px;
             border: 1px solid #cfd8e3;
             border-radius: 12px;
             background: #f8fbff;
         }
 
-        .guide h2 {
-            margin: 0 0 6px;
-            font-size: 1.35rem;
+        .guide summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 18px 22px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            cursor: pointer;
+            list-style: none;
+        }
+
+        .guide summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .guide summary::after {
+            content: "展開教學 ＋";
+            flex: 0 0 auto;
+            color: #2867b2;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .guide[open] summary {
+            border-bottom: 1px solid #dce3ec;
+        }
+
+        .guide[open] summary::after {
+            content: "收合教學 −";
+        }
+
+        .guide-content {
+            padding: 20px 22px 22px;
         }
 
         .guide-intro {
@@ -237,6 +267,41 @@
             background: #f5f5f5;
         }
 
+        .sort-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            font: inherit;
+            font-weight: 700;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .sort-button:hover {
+            color: #2867b2;
+        }
+
+        .sort-button:focus-visible {
+            outline: 2px solid #2867b2;
+            outline-offset: 3px;
+            border-radius: 2px;
+        }
+
+        .sort-indicator {
+            color: #777;
+            font-size: 0.85em;
+        }
+
+        th[aria-sort="ascending"] .sort-indicator,
+        th[aria-sort="descending"] .sort-indicator {
+            color: #2867b2;
+        }
+
         .empty-row td {
             padding: 28px 8px;
             color: #777;
@@ -254,7 +319,17 @@
             }
 
             .guide {
-                padding: 18px 14px;
+                border-radius: 9px;
+            }
+
+            .guide summary,
+            .guide-content {
+                padding-left: 14px;
+                padding-right: 14px;
+            }
+
+            .guide summary {
+                align-items: flex-start;
             }
 
             .action-button {
@@ -315,13 +390,14 @@
             >ULTIMA</button>
         </nav>
 
-        <section class="guide" aria-labelledby="guideTitle">
-            <h2 id="guideTitle">第一次使用？照著以下步驟操作</h2>
-            <p class="guide-intro">
-                整個流程約需一分鐘。請勿直接另外開啟官方網站，必須從本頁的按鈕開啟，兩個頁面才能互相傳送成績。
-            </p>
+        <details class="guide">
+            <summary>第一次使用？展開查看完整操作教學</summary>
+            <div class="guide-content">
+                <p class="guide-intro">
+                    整個流程約需一分鐘。請勿直接另外開啟官方網站，必須從本頁的按鈕開啟，兩個頁面才能互相傳送成績。
+                </p>
 
-            <ol class="guide-steps">
+                <ol class="guide-steps">
                 <li>
                     <strong>從本頁開啟 CHUNITHM-NET</strong>
                     <p>點擊教學下方的「開啟 CHUNITHM-NET」。若瀏覽器阻擋新視窗，請允許本站顯示彈出式視窗。</p>
@@ -376,14 +452,15 @@ document.head.appendChild(script);</code></pre>
                         狀態顯示「Bridge 已就緒」時，選擇上方難度，再點擊「取得成績」。
                     </p>
                 </li>
-            </ol>
+                </ol>
 
-            <p class="guide-note">
-                <strong>安全提醒：</strong>
-                只在網址為 <code>https://chunithm-net-eng.com/</code> 的官方頁面執行上述程式，
-                不要在 Console 貼上他人提供且內容不明的程式，也不要把帳號、密碼或 Token 貼給任何人。
-            </p>
-        </section>
+                <p class="guide-note">
+                    <strong>安全提醒：</strong>
+                    只在網址為 <code>https://chunithm-net-eng.com/</code> 的官方頁面執行上述程式，
+                    不要在 Console 貼上他人提供且內容不明的程式，也不要把帳號、密碼或 Token 貼給任何人。
+                </p>
+            </div>
+        </details>
 
         <div class="actions">
             <button id="openChuni" class="action-button" type="button">
@@ -403,10 +480,26 @@ document.head.appendChild(script);</code></pre>
             <table>
                 <thead>
                     <tr>
-                        <th>歌曲</th>
-                        <th>分數</th>
-                        <th>狀態</th>
-                        <th>IDX</th>
+                        <th aria-sort="none">
+                            <button class="sort-button" type="button" data-sort-key="title">
+                                歌曲 <span class="sort-indicator" aria-hidden="true">↕</span>
+                            </button>
+                        </th>
+                        <th aria-sort="none">
+                            <button class="sort-button" type="button" data-sort-key="score">
+                                分數 <span class="sort-indicator" aria-hidden="true">↕</span>
+                            </button>
+                        </th>
+                        <th aria-sort="none">
+                            <button class="sort-button" type="button" data-sort-key="status">
+                                狀態 <span class="sort-indicator" aria-hidden="true">↕</span>
+                            </button>
+                        </th>
+                        <th aria-sort="none">
+                            <button class="sort-button" type="button" data-sort-key="idx">
+                                IDX <span class="sort-indicator" aria-hidden="true">↕</span>
+                            </button>
+                        </th>
                     </tr>
                 </thead>
 

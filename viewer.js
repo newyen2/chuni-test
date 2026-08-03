@@ -16,6 +16,9 @@ const DIFFICULTIES = Object.freeze({
 let activeDifficulty = "MAS";
 let chuniWindow = null;
 let bridgeReady = false;
+let currentRecords = [];
+let sortKey = null;
+let sortDirection = "ascending";
 
 const pendingRequests = new Map();
 const statusElement = document.querySelector("#status");
@@ -25,6 +28,11 @@ const requestButton = document.querySelector("#requestRecords");
 const copyBridgeCodeButton = document.querySelector("#copyBridgeCode");
 const bridgeCodeElement = document.querySelector("#bridgeCode");
 const tabs = Array.from(document.querySelectorAll(".difficulty-tab"));
+const sortButtons = Array.from(document.querySelectorAll(".sort-button"));
+const textCollator = new Intl.Collator("zh-Hant", {
+    numeric: true,
+    sensitivity: "base"
+});
 
 function getDifficultyLabel(difficulty) {
     return DIFFICULTIES[difficulty]?.label ?? difficulty;
@@ -70,10 +78,82 @@ async function copyBridgeCode() {
     }, 1800);
 }
 
-function renderRecords(records) {
+function getRecordStatus(record) {
+    return [record.clear, record.clear2]
+        .filter(Boolean)
+        .join(" ");
+}
+
+function getSortValue(record, key) {
+    switch (key) {
+        case "score": {
+            const score = Number(record.score);
+            return Number.isFinite(score) ? score : null;
+        }
+
+        case "status":
+            return getRecordStatus(record);
+
+        case "idx":
+            return String(record.idx ?? "").trim();
+
+        case "title":
+        default:
+            return String(record.title ?? "").trim();
+    }
+}
+
+function compareRecords(leftRecord, rightRecord) {
+    const leftValue = getSortValue(leftRecord, sortKey);
+    const rightValue = getSortValue(rightRecord, sortKey);
+    const leftEmpty = leftValue === null || leftValue === "";
+    const rightEmpty = rightValue === null || rightValue === "";
+
+    // 沒有內容的欄位固定排在最後面，避免降冪時跑到最前方。
+    if (leftEmpty !== rightEmpty) {
+        return leftEmpty ? 1 : -1;
+    }
+
+    if (leftEmpty && rightEmpty) {
+        return 0;
+    }
+
+    const comparison = sortKey === "score"
+        ? leftValue - rightValue
+        : textCollator.compare(String(leftValue), String(rightValue));
+
+    return sortDirection === "ascending"
+        ? comparison
+        : -comparison;
+}
+
+function updateSortHeaders() {
+    for (const button of sortButtons) {
+        const selected = button.dataset.sortKey === sortKey;
+        const header = button.closest("th");
+        const indicator = button.querySelector(".sort-indicator");
+
+        header.setAttribute(
+            "aria-sort",
+            selected ? sortDirection : "none"
+        );
+
+        indicator.textContent = selected
+            ? sortDirection === "ascending" ? "↑" : "↓"
+            : "↕";
+    }
+}
+
+function resetSorting() {
+    sortKey = null;
+    sortDirection = "ascending";
+    updateSortHeaders();
+}
+
+function renderCurrentRecords() {
     recordsElement.replaceChildren();
 
-    if (records.length === 0) {
+    if (currentRecords.length === 0) {
         const row = document.createElement("tr");
         row.className = "empty-row";
 
@@ -86,7 +166,17 @@ function renderRecords(records) {
         return;
     }
 
-    for (const record of records) {
+    const recordsToRender = sortKey
+        ? currentRecords
+            .map((record, originalIndex) => ({ record, originalIndex }))
+            .sort((left, right) => (
+                compareRecords(left.record, right.record)
+                || left.originalIndex - right.originalIndex
+            ))
+            .map(item => item.record)
+        : currentRecords;
+
+    for (const record of recordsToRender) {
         const row = document.createElement("tr");
         const titleCell = document.createElement("td");
         const scoreCell = document.createElement("td");
@@ -100,14 +190,17 @@ function renderRecords(records) {
             ? score.toLocaleString()
             : "";
 
-        clearCell.textContent = [record.clear, record.clear2]
-            .filter(Boolean)
-            .join(" ");
+        clearCell.textContent = getRecordStatus(record);
         idxCell.textContent = record.idx ?? "";
 
         row.append(titleCell, scoreCell, clearCell, idxCell);
         recordsElement.append(row);
     }
+}
+
+function renderRecords(records) {
+    currentRecords = [...records];
+    renderCurrentRecords();
 }
 
 function saveRecordsToCache(difficulty, records) {
@@ -215,6 +308,7 @@ function selectDifficulty(difficulty, { focus = false } = {}) {
     }
 
     activeDifficulty = difficulty;
+    resetSorting();
     const label = getDifficultyLabel(difficulty);
 
     difficultyTitleElement.textContent = label;
@@ -290,6 +384,24 @@ for (const tab of tabs) {
             event.preventDefault();
             selectDifficulty(tabs[nextIndex].dataset.difficulty, { focus: true });
         }
+    });
+}
+
+for (const button of sortButtons) {
+    button.addEventListener("click", () => {
+        const selectedKey = button.dataset.sortKey;
+
+        if (sortKey === selectedKey) {
+            sortDirection = sortDirection === "ascending"
+                ? "descending"
+                : "ascending";
+        } else {
+            sortKey = selectedKey;
+            sortDirection = "ascending";
+        }
+
+        updateSortHeaders();
+        renderCurrentRecords();
     });
 }
 

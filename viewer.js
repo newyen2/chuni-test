@@ -22,6 +22,8 @@ const statusElement = document.querySelector("#status");
 const recordsElement = document.querySelector("#records");
 const difficultyTitleElement = document.querySelector("#difficultyTitle");
 const requestButton = document.querySelector("#requestRecords");
+const copyBridgeCodeButton = document.querySelector("#copyBridgeCode");
+const bridgeCodeElement = document.querySelector("#bridgeCode");
 const tabs = Array.from(document.querySelectorAll(".difficulty-tab"));
 
 function getDifficultyLabel(difficulty) {
@@ -35,6 +37,37 @@ function getCacheKey(difficulty) {
 function setStatus(message, isError = false) {
     statusElement.textContent = message;
     statusElement.classList.toggle("error", isError);
+}
+
+async function copyBridgeCode() {
+    const code = bridgeCodeElement.textContent.trim();
+
+    try {
+        await navigator.clipboard.writeText(code);
+    } catch (error) {
+        const textArea = document.createElement("textarea");
+        textArea.value = code;
+        textArea.setAttribute("readonly", "");
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.append(textArea);
+        textArea.select();
+
+        const copied = document.execCommand("copy");
+        textArea.remove();
+
+        if (!copied) {
+            console.error("複製 bridge 程式碼失敗：", error);
+            copyBridgeCodeButton.textContent = "複製失敗，請手動選取";
+            return;
+        }
+    }
+
+    copyBridgeCodeButton.textContent = "已複製！";
+
+    window.setTimeout(() => {
+        copyBridgeCodeButton.textContent = "複製程式碼";
+    }, 1800);
 }
 
 function renderRecords(records) {
@@ -278,6 +311,8 @@ document.querySelector("#openChuni").addEventListener("click", () => {
 requestButton.addEventListener("click", () => {
     requestRecords(activeDifficulty);
 });
+
+copyBridgeCodeButton.addEventListener("click", copyBridgeCode);
 
 window.addEventListener("message", event => {
     if (event.origin !== CHUNI_ORIGIN) {

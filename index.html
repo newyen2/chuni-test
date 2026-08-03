@@ -88,6 +88,110 @@
             --difficulty-color: #202124;
         }
 
+        .guide {
+            margin: 0 0 24px;
+            padding: 22px;
+            border: 1px solid #cfd8e3;
+            border-radius: 12px;
+            background: #f8fbff;
+        }
+
+        .guide h2 {
+            margin: 0 0 6px;
+            font-size: 1.35rem;
+        }
+
+        .guide-intro {
+            margin: 0 0 20px;
+            color: #555;
+        }
+
+        .guide-steps {
+            margin: 0;
+            padding-left: 28px;
+        }
+
+        .guide-steps li {
+            margin-bottom: 18px;
+            padding-left: 4px;
+        }
+
+        .guide-steps li::marker {
+            color: #2867b2;
+            font-weight: 700;
+        }
+
+        .guide-steps strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .guide-steps p {
+            margin: 4px 0;
+            line-height: 1.65;
+        }
+
+        kbd {
+            padding: 2px 6px;
+            border: 1px solid #bbb;
+            border-bottom-width: 2px;
+            border-radius: 4px;
+            background: #fff;
+            font: inherit;
+            font-size: 0.9em;
+        }
+
+        .code-panel {
+            margin-top: 10px;
+            overflow: hidden;
+            border: 1px solid #ccd2da;
+            border-radius: 8px;
+            background: #1f2329;
+        }
+
+        .code-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 10px;
+            background: #30363d;
+            color: #d7dce2;
+            font-size: 0.85rem;
+        }
+
+        .copy-button {
+            padding: 6px 10px;
+            border: 1px solid #69727d;
+            border-radius: 5px;
+            background: #fff;
+            color: #242424;
+            cursor: pointer;
+        }
+
+        .copy-button:hover {
+            background: #e9eef5;
+        }
+
+        pre {
+            margin: 0;
+            padding: 14px;
+            overflow-x: auto;
+            color: #eef2f6;
+            font-size: 0.86rem;
+            line-height: 1.5;
+            tab-size: 4;
+        }
+
+        .guide-note {
+            margin: 4px 0 0;
+            padding: 12px 14px;
+            border-left: 4px solid #e0a000;
+            border-radius: 4px;
+            background: #fff8df;
+            line-height: 1.6;
+        }
+
         .actions {
             display: flex;
             flex-wrap: wrap;
@@ -141,6 +245,21 @@
 
         .error {
             color: #b00020;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                margin: 24px auto;
+                padding: 0 14px;
+            }
+
+            .guide {
+                padding: 18px 14px;
+            }
+
+            .action-button {
+                flex: 1 1 100%;
+            }
         }
     </style>
 </head>
@@ -196,10 +315,75 @@
             >ULTIMA</button>
         </nav>
 
-        <p>
-            先開啟並登入 CHUNITHM-NET，
-            再於官方頁面執行 bridge 工具。
-        </p>
+        <section class="guide" aria-labelledby="guideTitle">
+            <h2 id="guideTitle">第一次使用？照著以下步驟操作</h2>
+            <p class="guide-intro">
+                整個流程約需一分鐘。請勿直接另外開啟官方網站，必須從本頁的按鈕開啟，兩個頁面才能互相傳送成績。
+            </p>
+
+            <ol class="guide-steps">
+                <li>
+                    <strong>從本頁開啟 CHUNITHM-NET</strong>
+                    <p>點擊教學下方的「開啟 CHUNITHM-NET」。若瀏覽器阻擋新視窗，請允許本站顯示彈出式視窗。</p>
+                </li>
+
+                <li>
+                    <strong>登入官方網站</strong>
+                    <p>在剛開啟的 CHUNITHM-NET 視窗完成登入，並保持該視窗開啟。</p>
+                </li>
+
+                <li>
+                    <strong>開啟瀏覽器 Console</strong>
+                    <p>
+                        回到 CHUNITHM-NET 視窗。Windows／Linux 請按
+                        <kbd>F12</kbd> 或 <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>J</kbd>；
+                        macOS 請按 <kbd>⌘</kbd> + <kbd>⌥</kbd> + <kbd>J</kbd>，再切換至 Console（主控台）。
+                    </p>
+                </li>
+
+                <li>
+                    <strong>複製並執行 bridge 程式</strong>
+                    <p>按下「複製程式碼」，貼到 CHUNITHM-NET 的 Console，然後按 <kbd>Enter</kbd>。</p>
+
+                    <div class="code-panel">
+                        <div class="code-toolbar">
+                            <span>在 CHUNITHM-NET Console 執行</span>
+                            <button id="copyBridgeCode" class="copy-button" type="button">
+                                複製程式碼
+                            </button>
+                        </div>
+                        <pre><code id="bridgeCode">const script = document.createElement("script");
+
+script.src =
+    `https://newyen2.github.io/chuni-test/bridge.js?t=${Date.now()}`;
+
+script.onload = () =&gt; {
+    console.log("bridge.js 載入完成");
+};
+
+script.onerror = error =&gt; {
+    console.error("bridge.js 載入失敗", error);
+};
+
+document.head.appendChild(script);</code></pre>
+                    </div>
+                </li>
+
+                <li>
+                    <strong>回到本頁取得成績</strong>
+                    <p>
+                        Console 顯示「CHUNI Simple Bridge 已安裝」及「bridge.js 載入完成」後，回到本頁。
+                        狀態顯示「Bridge 已就緒」時，選擇上方難度，再點擊「取得成績」。
+                    </p>
+                </li>
+            </ol>
+
+            <p class="guide-note">
+                <strong>安全提醒：</strong>
+                只在網址為 <code>https://chunithm-net-eng.com/</code> 的官方頁面執行上述程式，
+                不要在 Console 貼上他人提供且內容不明的程式，也不要把帳號、密碼或 Token 貼給任何人。
+            </p>
+        </section>
 
         <div class="actions">
             <button id="openChuni" class="action-button" type="button">

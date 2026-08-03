@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-TW">
+<html lang="zh-TW" data-app-version="v1.0.0">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -25,6 +25,28 @@
 
         h1 {
             margin-bottom: 20px;
+        }
+
+        .page-meta {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+        }
+
+        .version-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            border: 1px solid #cfd8e3;
+            border-radius: 999px;
+            background: #f8fbff;
+            color: #555;
+            font-size: 0.82rem;
+        }
+
+        .version-badge strong {
+            color: #2867b2;
         }
 
         .difficulty-tabs {
@@ -341,6 +363,12 @@
 
 <body>
     <main>
+        <div class="page-meta">
+            <span class="version-badge" aria-label="目前網頁版本">
+                Version <strong id="appVersion">v1.0.0</strong>
+            </span>
+        </div>
+
         <h1>CHUNITHM <span id="difficultyTitle">Master</span> 成績</h1>
 
         <nav
@@ -508,6 +536,17 @@ document.head.appendChild(script);</code></pre>
         </div>
     </main>
 
-    <script src="./viewer.js"></script>
+    <script>
+        (() => {
+            // 每次更新功能時，只需遞增 <html> 上的 data-app-version。
+            // 畫面版本與 viewer.js 快取版本會自動同步。
+            const version = document.documentElement.dataset.appVersion;
+            document.querySelector("#appVersion").textContent = version;
+
+            const viewerScript = document.createElement("script");
+            viewerScript.src = `./viewer.js?v=${encodeURIComponent(version)}`;
+            document.body.appendChild(viewerScript);
+        })();
+    </script>
 </body>
 </html>

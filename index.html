@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-TW" data-app-version="v1.0.0">
+<html lang="zh-TW" data-app-version="v1.1.0">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -49,65 +49,140 @@
             color: #2867b2;
         }
 
-        .difficulty-tabs {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 24px;
-            padding: 5px;
-            overflow-x: auto;
+        .difficulty-filter {
+            margin: 0 0 16px;
+            padding: 14px;
             border: 1px solid #d9d9d9;
             border-radius: 10px;
             background: #f5f5f5;
         }
 
-        .difficulty-tab {
-            flex: 1 0 auto;
-            min-width: 110px;
-            margin: 0;
-            padding: 10px 14px;
-            border: 0;
-            border-bottom: 3px solid transparent;
-            border-radius: 7px;
-            background: transparent;
-            color: #555;
+        .difficulty-filter legend {
+            padding: 0 6px;
             font-weight: 700;
-            cursor: pointer;
         }
 
-        .difficulty-tab:hover {
-            background: #fff;
+        .filter-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
-        .difficulty-tab:focus-visible {
-            outline: 3px solid #8ab4f8;
-            outline-offset: 1px;
+        .filter-chip {
+            position: relative;
+            flex: 1 1 120px;
+            min-width: 105px;
+            --difficulty-color: #777;
         }
 
-        .difficulty-tab[aria-selected="true"] {
-            border-bottom-color: var(--difficulty-color);
-            background: #fff;
-            color: #111;
-            box-shadow: 0 1px 4px rgb(0 0 0 / 10%);
-        }
-
-        .difficulty-tab[data-difficulty="BAS"] {
+        .filter-chip[data-difficulty="BAS"] {
             --difficulty-color: #28a745;
         }
 
-        .difficulty-tab[data-difficulty="ADV"] {
-            --difficulty-color: #f0b400;
+        .filter-chip[data-difficulty="ADV"] {
+            --difficulty-color: #d69e00;
         }
 
-        .difficulty-tab[data-difficulty="EXP"] {
+        .filter-chip[data-difficulty="EXP"] {
             --difficulty-color: #e53935;
         }
 
-        .difficulty-tab[data-difficulty="MAS"] {
+        .filter-chip[data-difficulty="MAS"] {
             --difficulty-color: #8e44ad;
         }
 
-        .difficulty-tab[data-difficulty="ULT"] {
+        .filter-chip[data-difficulty="ULT"] {
             --difficulty-color: #202124;
+        }
+
+        .filter-chip input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+        }
+
+        .filter-chip span {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-bottom: 3px solid transparent;
+            border-radius: 7px;
+            background: #fff;
+            color: #666;
+            font-weight: 700;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .filter-chip input:checked + span {
+            border-color: var(--difficulty-color);
+            border-bottom-color: var(--difficulty-color);
+            color: #222;
+            box-shadow: 0 1px 4px rgb(0 0 0 / 10%);
+        }
+
+        .filter-chip input:focus-visible + span {
+            outline: 3px solid #8ab4f8;
+            outline-offset: 2px;
+        }
+
+        .filter-tools {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .filter-tool-button {
+            padding: 5px 10px;
+            border: 1px solid #bbb;
+            border-radius: 5px;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .data-status-panel {
+            margin-bottom: 20px;
+            padding: 14px;
+            border: 1px solid #d9d9d9;
+            border-radius: 9px;
+            background: #fff;
+        }
+
+        .data-status-heading {
+            display: block;
+            margin-bottom: 9px;
+        }
+
+        .data-status-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+        }
+
+        .data-status-badge {
+            padding: 5px 9px;
+            border: 1px solid #d0d0d0;
+            border-radius: 999px;
+            background: #f5f5f5;
+            color: #777;
+            font-size: 0.82rem;
+        }
+
+        .data-status-badge.loaded {
+            border-color: #6ba878;
+            background: #edf8ef;
+            color: #1f6b30;
+            font-weight: 700;
+        }
+
+        .data-status-help {
+            display: block;
+            margin-top: 8px;
+            color: #777;
         }
 
         .guide {
@@ -365,58 +440,53 @@
     <main>
         <div class="page-meta">
             <span class="version-badge" aria-label="目前網頁版本">
-                Version <strong id="appVersion">v1.0.0</strong>
+                Version <strong id="appVersion">v1.1.0</strong>
             </span>
         </div>
 
-        <h1>CHUNITHM <span id="difficultyTitle">Master</span> 成績</h1>
+        <h1>CHUNITHM 成績</h1>
 
-        <nav
-            class="difficulty-tabs"
-            role="tablist"
-            aria-label="譜面難度"
-        >
-            <button
-                class="difficulty-tab"
-                type="button"
-                role="tab"
-                aria-selected="false"
-                tabindex="-1"
-                data-difficulty="BAS"
-            >BASIC</button>
-            <button
-                class="difficulty-tab"
-                type="button"
-                role="tab"
-                aria-selected="false"
-                tabindex="-1"
-                data-difficulty="ADV"
-            >ADVANCED</button>
-            <button
-                class="difficulty-tab"
-                type="button"
-                role="tab"
-                aria-selected="false"
-                tabindex="-1"
-                data-difficulty="EXP"
-            >EXPERT</button>
-            <button
-                class="difficulty-tab"
-                type="button"
-                role="tab"
-                aria-selected="true"
-                tabindex="0"
-                data-difficulty="MAS"
-            >MASTER</button>
-            <button
-                class="difficulty-tab"
-                type="button"
-                role="tab"
-                aria-selected="false"
-                tabindex="-1"
-                data-difficulty="ULT"
-            >ULTIMA</button>
-        </nav>
+        <fieldset class="difficulty-filter">
+            <legend>顯示難度（可複選）</legend>
+            <div class="filter-options">
+                <label class="filter-chip" data-difficulty="BAS">
+                    <input class="difficulty-filter-input" type="checkbox" value="BAS" checked>
+                    <span>BASIC</span>
+                </label>
+                <label class="filter-chip" data-difficulty="ADV">
+                    <input class="difficulty-filter-input" type="checkbox" value="ADV" checked>
+                    <span>ADVANCED</span>
+                </label>
+                <label class="filter-chip" data-difficulty="EXP">
+                    <input class="difficulty-filter-input" type="checkbox" value="EXP" checked>
+                    <span>EXPERT</span>
+                </label>
+                <label class="filter-chip" data-difficulty="MAS">
+                    <input class="difficulty-filter-input" type="checkbox" value="MAS" checked>
+                    <span>MASTER</span>
+                </label>
+                <label class="filter-chip" data-difficulty="ULT">
+                    <input class="difficulty-filter-input" type="checkbox" value="ULT" checked>
+                    <span>ULTIMA</span>
+                </label>
+            </div>
+            <div class="filter-tools">
+                <button id="selectAllDifficulties" class="filter-tool-button" type="button">全選</button>
+                <button id="clearAllDifficulties" class="filter-tool-button" type="button">清除</button>
+            </div>
+        </fieldset>
+
+        <section class="data-status-panel" aria-labelledby="dataStatusHeading">
+            <strong id="dataStatusHeading" class="data-status-heading">資料取得狀態</strong>
+            <div id="difficultyDataStatus" class="data-status-list" aria-live="polite">
+                <span class="data-status-badge" data-difficulty="BAS">○ BASIC 尚未取得</span>
+                <span class="data-status-badge" data-difficulty="ADV">○ ADVANCED 尚未取得</span>
+                <span class="data-status-badge" data-difficulty="EXP">○ EXPERT 尚未取得</span>
+                <span class="data-status-badge" data-difficulty="MAS">○ MASTER 尚未取得</span>
+                <span class="data-status-badge" data-difficulty="ULT">○ ULTIMA 尚未取得</span>
+            </div>
+            <small class="data-status-help">此處也會顯示從 LocalStorage 快取載入的難度。</small>
+        </section>
 
         <details class="guide">
             <summary>第一次使用？展開查看完整操作教學</summary>
@@ -477,7 +547,7 @@ document.head.appendChild(script);</code></pre>
                     <strong>回到本頁取得成績</strong>
                     <p>
                         Console 顯示「CHUNI Simple Bridge 已安裝」及「bridge.js 載入完成」後，回到本頁。
-                        狀態顯示「Bridge 已就緒」時，選擇上方難度，再點擊「取得成績」。
+                        狀態顯示「Bridge 已就緒」時，點擊「取得所有難度成績」；上方篩選器只控制表格顯示哪些難度。
                     </p>
                 </li>
                 </ol>
@@ -496,7 +566,7 @@ document.head.appendChild(script);</code></pre>
             </button>
 
             <button id="requestRecords" class="action-button" type="button">
-                取得 Master 成績
+                取得所有難度成績
             </button>
         </div>
 
@@ -508,6 +578,11 @@ document.head.appendChild(script);</code></pre>
             <table>
                 <thead>
                     <tr>
+                        <th aria-sort="none">
+                            <button class="sort-button" type="button" data-sort-key="difficulty">
+                                難度 <span class="sort-indicator" aria-hidden="true">↕</span>
+                            </button>
+                        </th>
                         <th aria-sort="none">
                             <button class="sort-button" type="button" data-sort-key="title">
                                 歌曲 <span class="sort-indicator" aria-hidden="true">↕</span>

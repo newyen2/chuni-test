@@ -1,127 +1,110 @@
 "use strict";
 
-const CHUNI_ORIGIN =
-    "https://chunithm-net-eng.com";
+const CHUNI_ORIGIN = "https://chunithm-net-eng.com";
+const CACHE_PREFIX = "chuni_records_cache_v2_";
+const LEGACY_MASTER_CACHE_KEY = "chuni_master_records_cache_v1";
+const CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
 
-const CACHE_KEY =
-    "chuni_master_records_cache_v1";
+const DIFFICULTIES = Object.freeze({
+    BAS: { label: "Basic" },
+    ADV: { label: "Advanced" },
+    EXP: { label: "Expert" },
+    MAS: { label: "Master" },
+    ULT: { label: "Ultima" }
+});
 
-const CACHE_MAX_AGE =
-    24 * 60 * 60 * 1000; // 24 小時
-
+let activeDifficulty = "MAS";
 let chuniWindow = null;
 let bridgeReady = false;
 
-const statusElement =
-    document.querySelector("#status");
+const pendingRequests = new Map();
+const statusElement = document.querySelector("#status");
+const recordsElement = document.querySelector("#records");
+const difficultyTitleElement = document.querySelector("#difficultyTitle");
+const requestButton = document.querySelector("#requestRecords");
+const tabs = Array.from(document.querySelectorAll(".difficulty-tab"));
 
-const recordsElement =
-    document.querySelector("#records");
+function getDifficultyLabel(difficulty) {
+    return DIFFICULTIES[difficulty]?.label ?? difficulty;
+}
+
+function getCacheKey(difficulty) {
+    return `${CACHE_PREFIX}${difficulty}`;
+}
 
 function setStatus(message, isError = false) {
     statusElement.textContent = message;
-    statusElement.classList.toggle(
-        "error",
-        isError
-    );
+    statusElement.classList.toggle("error", isError);
 }
 
 function renderRecords(records) {
     recordsElement.replaceChildren();
 
+    if (records.length === 0) {
+        const row = document.createElement("tr");
+        row.className = "empty-row";
+
+        const cell = document.createElement("td");
+        cell.colSpan = 4;
+        cell.textContent = "這個難度目前沒有成績";
+
+        row.append(cell);
+        recordsElement.append(row);
+        return;
+    }
+
     for (const record of records) {
         const row = document.createElement("tr");
+        const titleCell = document.createElement("td");
+        const scoreCell = document.createElement("td");
+        const clearCell = document.createElement("td");
+        const idxCell = document.createElement("td");
 
-        const titleCell =
-            document.createElement("td");
-
-        const scoreCell =
-            document.createElement("td");
-
-        const clearCell =
-            document.createElement("td");
-
-        const idxCell =
-            document.createElement("td");
-
-        titleCell.textContent =
-            record.title ?? "";
+        titleCell.textContent = record.title ?? "";
 
         const score = Number(record.score);
+        scoreCell.textContent = Number.isFinite(score)
+            ? score.toLocaleString()
+            : "";
 
-        scoreCell.textContent =
-            Number.isFinite(score)
-                ? score.toLocaleString()
-                : "";
+        clearCell.textContent = [record.clear, record.clear2]
+            .filter(Boolean)
+            .join(" ");
+        idxCell.textContent = record.idx ?? "";
 
-        clearCell.textContent =
-            [record.clear, record.clear2]
-                .filter(Boolean)
-                .join(" ");
-
-        idxCell.textContent =
-            record.idx ?? "";
-
-        row.append(
-            titleCell,
-            scoreCell,
-            clearCell,
-            idxCell
-        );
-
+        row.append(titleCell, scoreCell, clearCell, idxCell);
         recordsElement.append(row);
     }
 }
 
-/*
- * 把成績與儲存時間寫入 localStorage。
- */
-function saveRecordsToCache(records) {
+function saveRecordsToCache(difficulty, records) {
     const cache = {
+        difficulty,
         savedAt: Date.now(),
         records
     };
 
     try {
-        localStorage.setItem(
-            CACHE_KEY,
-            JSON.stringify(cache)
-        );
-
+        localStorage.setItem(getCacheKey(difficulty), JSON.stringify(cache));
         return true;
     } catch (error) {
-        console.error(
-            "寫入 localStorage 失敗：",
-            error
-        );
-
+        console.error("寫入 localStorage 失敗：", error);
         return false;
     }
 }
 
-/*
- * 讀取 localStorage。
- *
- * allowExpired = false：
- *   超過 24 小時就視為沒有快取。
- *
- * allowExpired = true：
- *   即使過期也回傳，可用於顯示舊資料。
- */
-function loadRecordsFromCache(
-    allowExpired = false
-) {
+function loadRecordsFromCache(difficulty, allowExpired = false) {
     let rawCache;
 
     try {
-        rawCache =
-            localStorage.getItem(CACHE_KEY);
-    } catch (error) {
-        console.error(
-            "讀取 localStorage 失敗：",
-            error
-        );
+        rawCache = localStorage.getItem(getCacheKey(difficulty));
 
+        // 讓舊版已儲存的 Master 成績可以繼續使用。
+        if (!rawCache && difficulty === "MAS") {
+            rawCache = localStorage.getItem(LEGACY_MASTER_CACHE_KEY);
+        }
+    } catch (error) {
+        console.error("讀取 localStorage 失敗：", error);
         return null;
     }
 
@@ -138,16 +121,11 @@ function loadRecordsFromCache(
             !Number.isFinite(cache.savedAt) ||
             !Array.isArray(cache.records)
         ) {
-            throw new Error(
-                "快取資料格式不正確"
-            );
+            throw new Error("快取資料格式不正確");
         }
 
-        const age =
-            Date.now() - cache.savedAt;
-
-        const expired =
-            age >= CACHE_MAX_AGE;
+        const age = Date.now() - cache.savedAt;
+        const expired = age >= CACHE_MAX_AGE;
 
         if (expired && !allowExpired) {
             return null;
@@ -160,237 +138,231 @@ function loadRecordsFromCache(
             expired
         };
     } catch (error) {
-        console.error(
-            "解析快取失敗：",
-            error
-        );
+        console.error("解析快取失敗：", error);
 
-        /*
-         * 快取損壞時直接清除。
-         */
-        localStorage.removeItem(CACHE_KEY);
+        try {
+            localStorage.removeItem(getCacheKey(difficulty));
+        } catch (removeError) {
+            console.error("移除損壞快取失敗：", removeError);
+        }
 
         return null;
     }
 }
 
-function clearRecordsCache() {
-    localStorage.removeItem(CACHE_KEY);
-}
-
 function formatCacheTime(timestamp) {
-    return new Date(timestamp).toLocaleString(
-        "zh-TW",
-        {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit"
-        }
-    );
+    return new Date(timestamp).toLocaleString("zh-TW", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+    });
 }
 
-/*
- * 嘗試直接使用 24 小時內的快取。
- */
-function showFreshCache() {
-    const cache =
-        loadRecordsFromCache(false);
+function showFreshCache(difficulty) {
+    const cache = loadRecordsFromCache(difficulty, false);
 
     if (!cache) {
         return false;
     }
 
     renderRecords(cache.records);
-
     setStatus(
-        `已從本機快取載入 ${cache.records.length} 筆資料，`
+        `已從快取載入 ${cache.records.length} 筆 ${getDifficultyLabel(difficulty)} 成績，`
         + `更新時間：${formatCacheTime(cache.savedAt)}`
     );
-
     return true;
 }
 
-document
-    .querySelector("#openChuni")
-    .addEventListener("click", () => {
-        chuniWindow = window.open(
-            `${CHUNI_ORIGIN}/mobile/home/`,
-            "chuniBridgeWindow"
-        );
+function selectDifficulty(difficulty, { focus = false } = {}) {
+    if (!DIFFICULTIES[difficulty]) {
+        return;
+    }
 
-        if (!chuniWindow) {
-            setStatus(
-                "瀏覽器阻擋了彈出視窗。",
-                true
-            );
+    activeDifficulty = difficulty;
+    const label = getDifficultyLabel(difficulty);
 
-            return;
-        }
+    difficultyTitleElement.textContent = label;
+    requestButton.textContent = `取得 ${label} 成績`;
 
-        bridgeReady = false;
+    for (const tab of tabs) {
+        const selected = tab.dataset.difficulty === difficulty;
+        tab.setAttribute("aria-selected", String(selected));
+        tab.tabIndex = selected ? 0 : -1;
 
-        setStatus(
-            "已開啟 CHUNITHM-NET，請登入並執行 bridge 工具。"
-        );
-    });
-
-document
-    .querySelector("#requestMaster")
-    .addEventListener("click", () => {
-        /*
-         * 優先使用一天內的 localStorage。
-         */
-        if (showFreshCache()) {
-            return;
-        }
-
-        /*
-         * 沒有有效快取，才需要向 bridge 要資料。
-         */
-        if (!chuniWindow || chuniWindow.closed) {
-            setStatus(
-                "沒有一天內的快取，請先開啟 CHUNITHM-NET。",
-                true
-            );
-
-            return;
-        }
-
-        if (!bridgeReady) {
-            setStatus(
-                "尚未偵測到 bridge，但仍嘗試發送請求。"
-            );
-        } else {
-            setStatus(
-                "快取不存在或已超過一天，正在重新取得 Master 成績……"
-            );
-        }
-
-        chuniWindow.postMessage(
-            {
-                source: "chuni-simple-viewer",
-                action: "request",
-                requestId:
-                    crypto.randomUUID(),
-                payload: {
-                    target: "allRecord",
-                    difficulty: "MAS"
-                }
-            },
-            CHUNI_ORIGIN
-        );
-    });
-
-window.addEventListener(
-    "message",
-    event => {
-        if (
-            event.origin !== CHUNI_ORIGIN
-        ) {
-            return;
-        }
-
-        if (
-            chuniWindow &&
-            event.source !== chuniWindow
-        ) {
-            return;
-        }
-
-        const message = event.data;
-
-        if (
-            !message ||
-            typeof message !== "object" ||
-            message.source !==
-                "chuni-simple-bridge"
-        ) {
-            return;
-        }
-
-        switch (message.action) {
-            case "ready":
-                bridgeReady = true;
-
-                setStatus(
-                    "Bridge 已連線，可以取得成績。"
-                );
-                break;
-
-            case "response":
-                if (!message.ok) {
-                    setStatus(
-                        `取得失敗：${message.error}`,
-                        true
-                    );
-
-                    /*
-                     * 網路取得失敗時，可以退回顯示
-                     * 已過期的快取。
-                     */
-                    const expiredCache =
-                        loadRecordsFromCache(true);
-
-                    if (expiredCache) {
-                        renderRecords(
-                            expiredCache.records
-                        );
-
-                        setStatus(
-                            `重新取得失敗，暫時顯示舊快取。`
-                            + `快取時間：`
-                            + formatCacheTime(
-                                expiredCache.savedAt
-                            ),
-                            true
-                        );
-                    }
-
-                    return;
-                }
-
-                if (
-                    !Array.isArray(message.data)
-                ) {
-                    setStatus(
-                        "Bridge 回傳的資料格式不正確。",
-                        true
-                    );
-
-                    return;
-                }
-
-                renderRecords(message.data);
-
-                const saved =
-                    saveRecordsToCache(
-                        message.data
-                    );
-
-                if (saved) {
-                    setStatus(
-                        `已取得並快取 `
-                        + `${message.data.length} `
-                        + `筆 Master 成績。`
-                    );
-                } else {
-                    setStatus(
-                        `已取得 `
-                        + `${message.data.length} `
-                        + `筆成績，但無法寫入快取。`,
-                        true
-                    );
-                }
-
-                break;
+        if (selected && focus) {
+            tab.focus();
         }
     }
-);
 
-/*
- * 頁面開啟時立即嘗試顯示一天內的快取。
- */
-showFreshCache();
+    if (!showFreshCache(difficulty)) {
+        renderRecords([]);
+        setStatus(`尚未載入 ${label} 成績`);
+    }
+}
+
+function requestRecords(difficulty) {
+    const label = getDifficultyLabel(difficulty);
+
+    if (showFreshCache(difficulty)) {
+        return;
+    }
+
+    if (!chuniWindow || chuniWindow.closed) {
+        setStatus("尚未開啟官方頁面，請先開啟 CHUNITHM-NET。", true);
+        return;
+    }
+
+    setStatus(
+        bridgeReady
+            ? `正在取得 ${label} 成績…`
+            : "正在等待 bridge；若已貼上工具，請稍候再試。"
+    );
+
+    const requestId = crypto.randomUUID();
+    pendingRequests.set(requestId, difficulty);
+
+    chuniWindow.postMessage(
+        {
+            source: "chuni-simple-viewer",
+            action: "request",
+            requestId,
+            payload: {
+                target: "allRecord",
+                difficulty
+            }
+        },
+        CHUNI_ORIGIN
+    );
+}
+
+for (const tab of tabs) {
+    tab.addEventListener("click", () => {
+        selectDifficulty(tab.dataset.difficulty);
+    });
+
+    tab.addEventListener("keydown", event => {
+        const currentIndex = tabs.indexOf(tab);
+        let nextIndex = null;
+
+        if (event.key === "ArrowRight") {
+            nextIndex = (currentIndex + 1) % tabs.length;
+        } else if (event.key === "ArrowLeft") {
+            nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+        } else if (event.key === "Home") {
+            nextIndex = 0;
+        } else if (event.key === "End") {
+            nextIndex = tabs.length - 1;
+        }
+
+        if (nextIndex !== null) {
+            event.preventDefault();
+            selectDifficulty(tabs[nextIndex].dataset.difficulty, { focus: true });
+        }
+    });
+}
+
+document.querySelector("#openChuni").addEventListener("click", () => {
+    chuniWindow = window.open(
+        `${CHUNI_ORIGIN}/mobile/home/`,
+        "chuniBridgeWindow"
+    );
+
+    if (!chuniWindow) {
+        setStatus("無法開啟視窗，請允許瀏覽器顯示彈出式視窗。", true);
+        return;
+    }
+
+    bridgeReady = false;
+    setStatus("已開啟 CHUNITHM-NET，登入後請在官方頁面執行 bridge 工具。 ");
+});
+
+requestButton.addEventListener("click", () => {
+    requestRecords(activeDifficulty);
+});
+
+window.addEventListener("message", event => {
+    if (event.origin !== CHUNI_ORIGIN) {
+        return;
+    }
+
+    if (chuniWindow && event.source !== chuniWindow) {
+        return;
+    }
+
+    const message = event.data;
+
+    if (
+        !message ||
+        typeof message !== "object" ||
+        message.source !== "chuni-simple-bridge"
+    ) {
+        return;
+    }
+
+    if (message.action === "ready") {
+        bridgeReady = true;
+        setStatus("Bridge 已就緒，請選擇難度並取得成績。");
+        return;
+    }
+
+    if (message.action !== "response") {
+        return;
+    }
+
+    const difficulty = pendingRequests.get(message.requestId)
+        ?? message.difficulty;
+    pendingRequests.delete(message.requestId);
+
+    if (!DIFFICULTIES[difficulty]) {
+        return;
+    }
+
+    const label = getDifficultyLabel(difficulty);
+
+    if (!message.ok) {
+        if (difficulty !== activeDifficulty) {
+            return;
+        }
+
+        const expiredCache = loadRecordsFromCache(difficulty, true);
+
+        if (expiredCache) {
+            renderRecords(expiredCache.records);
+            setStatus(
+                `取得 ${label} 成績失敗，顯示較舊的快取資料。`
+                + `快取時間：${formatCacheTime(expiredCache.savedAt)}`,
+                true
+            );
+        } else {
+            setStatus(`取得 ${label} 成績失敗：${message.error}`, true);
+        }
+
+        return;
+    }
+
+    if (!Array.isArray(message.data)) {
+        if (difficulty === activeDifficulty) {
+            setStatus("Bridge 回傳的資料格式不正確。", true);
+        }
+        return;
+    }
+
+    const saved = saveRecordsToCache(difficulty, message.data);
+
+    if (difficulty !== activeDifficulty) {
+        return;
+    }
+
+    renderRecords(message.data);
+    setStatus(
+        saved
+            ? `已取得並快取 ${message.data.length} 筆 ${label} 成績。`
+            : `已取得 ${message.data.length} 筆 ${label} 成績，但無法寫入快取。`,
+        !saved
+    );
+});
+
+selectDifficulty(activeDifficulty);

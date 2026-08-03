@@ -2,35 +2,119 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>CHUNITHM 成績測試</title>
 
     <style>
+        :root {
+            color-scheme: light;
+            font-family: "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             max-width: 900px;
             margin: 40px auto;
             padding: 0 20px;
-            font-family:
-                "Microsoft JhengHei",
-                "Noto Sans TC",
-                sans-serif;
+            color: #242424;
         }
 
-        button {
-            margin-right: 8px;
-            padding: 10px 16px;
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .difficulty-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            padding: 5px;
+            overflow-x: auto;
+            border: 1px solid #d9d9d9;
+            border-radius: 10px;
+            background: #f5f5f5;
+        }
+
+        .difficulty-tab {
+            flex: 1 0 auto;
+            min-width: 110px;
+            margin: 0;
+            padding: 10px 14px;
+            border: 0;
+            border-bottom: 3px solid transparent;
+            border-radius: 7px;
+            background: transparent;
+            color: #555;
+            font-weight: 700;
             cursor: pointer;
+        }
+
+        .difficulty-tab:hover {
+            background: #fff;
+        }
+
+        .difficulty-tab:focus-visible {
+            outline: 3px solid #8ab4f8;
+            outline-offset: 1px;
+        }
+
+        .difficulty-tab[aria-selected="true"] {
+            border-bottom-color: var(--difficulty-color);
+            background: #fff;
+            color: #111;
+            box-shadow: 0 1px 4px rgb(0 0 0 / 10%);
+        }
+
+        .difficulty-tab[data-difficulty="BAS"] {
+            --difficulty-color: #28a745;
+        }
+
+        .difficulty-tab[data-difficulty="ADV"] {
+            --difficulty-color: #f0b400;
+        }
+
+        .difficulty-tab[data-difficulty="EXP"] {
+            --difficulty-color: #e53935;
+        }
+
+        .difficulty-tab[data-difficulty="MAS"] {
+            --difficulty-color: #8e44ad;
+        }
+
+        .difficulty-tab[data-difficulty="ULT"] {
+            --difficulty-color: #202124;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .action-button {
+            padding: 10px 16px;
+            border: 1px solid #bbb;
+            border-radius: 6px;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .action-button:hover {
+            background: #f6f6f6;
         }
 
         #status {
             margin: 20px 0;
             padding: 12px;
-            background: #f2f2f2;
             border-radius: 6px;
+            background: #f2f2f2;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
         }
 
         table {
@@ -49,6 +133,12 @@
             background: #f5f5f5;
         }
 
+        .empty-row td {
+            padding: 28px 8px;
+            color: #777;
+            text-align: center;
+        }
+
         .error {
             color: #b00020;
         }
@@ -56,37 +146,90 @@
 </head>
 
 <body>
-    <h1>CHUNITHM Master 成績</h1>
+    <main>
+        <h1>CHUNITHM <span id="difficultyTitle">Master</span> 成績</h1>
 
-    <p>
-        先開啟並登入 CHUNITHM-NET，
-        再於官方頁面執行 bridge 工具。
-    </p>
+        <nav
+            class="difficulty-tabs"
+            role="tablist"
+            aria-label="譜面難度"
+        >
+            <button
+                class="difficulty-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                tabindex="-1"
+                data-difficulty="BAS"
+            >BASIC</button>
+            <button
+                class="difficulty-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                tabindex="-1"
+                data-difficulty="ADV"
+            >ADVANCED</button>
+            <button
+                class="difficulty-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                tabindex="-1"
+                data-difficulty="EXP"
+            >EXPERT</button>
+            <button
+                class="difficulty-tab"
+                type="button"
+                role="tab"
+                aria-selected="true"
+                tabindex="0"
+                data-difficulty="MAS"
+            >MASTER</button>
+            <button
+                class="difficulty-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                tabindex="-1"
+                data-difficulty="ULT"
+            >ULTIMA</button>
+        </nav>
 
-    <button id="openChuni">
-        開啟 CHUNITHM-NET
-    </button>
+        <p>
+            先開啟並登入 CHUNITHM-NET，
+            再於官方頁面執行 bridge 工具。
+        </p>
 
-    <button id="requestMaster">
-        取得 Master 成績
-    </button>
+        <div class="actions">
+            <button id="openChuni" class="action-button" type="button">
+                開啟 CHUNITHM-NET
+            </button>
 
-    <div id="status">
-        尚未連線
-    </div>
+            <button id="requestRecords" class="action-button" type="button">
+                取得 Master 成績
+            </button>
+        </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>歌曲</th>
-                <th>分數</th>
-                <th>狀態</th>
-                <th>IDX</th>
-            </tr>
-        </thead>
+        <div id="status" role="status" aria-live="polite">
+            尚未連線
+        </div>
 
-        <tbody id="records"></tbody>
-    </table>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>歌曲</th>
+                        <th>分數</th>
+                        <th>狀態</th>
+                        <th>IDX</th>
+                    </tr>
+                </thead>
+
+                <tbody id="records"></tbody>
+            </table>
+        </div>
+    </main>
 
     <script src="./viewer.js"></script>
 </body>

@@ -206,10 +206,6 @@ function selectDifficulty(difficulty, { focus = false } = {}) {
 function requestRecords(difficulty) {
     const label = getDifficultyLabel(difficulty);
 
-    if (showFreshCache(difficulty)) {
-        return;
-    }
-
     if (!chuniWindow || chuniWindow.closed) {
         setStatus("尚未開啟官方頁面，請先開啟 CHUNITHM-NET。", true);
         return;
@@ -288,10 +284,6 @@ window.addEventListener("message", event => {
         return;
     }
 
-    if (chuniWindow && event.source !== chuniWindow) {
-        return;
-    }
-
     const message = event.data;
 
     if (
@@ -301,6 +293,11 @@ window.addEventListener("message", event => {
     ) {
         return;
     }
+
+    // 以實際收到 bridge 訊息的官方視窗重新綁定。
+    // 某些瀏覽器經過登入重新導向後，原本 window.open 回傳的
+    // WindowProxy 不一定能通過嚴格物件比對。
+    chuniWindow = event.source;
 
     if (message.action === "ready") {
         bridgeReady = true;

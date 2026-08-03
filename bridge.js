@@ -14,8 +14,26 @@
         ULT: "sendUltima"
     });
 
+    function notifyViewerReady() {
+        if (!window.opener || window.opener.closed) {
+            console.warn("找不到成績頁視窗，請從成績頁開啟 CHUNITHM-NET。");
+            return false;
+        }
+
+        window.opener.postMessage(
+            {
+                source: BRIDGE_SOURCE,
+                action: "ready"
+            },
+            VIEWER_ORIGIN
+        );
+
+        return true;
+    }
+
     if (window.chuniSimpleBridgeInstalled) {
         console.log("CHUNI Simple Bridge 已經安裝。");
+        notifyViewerReady();
         return;
     }
 
@@ -212,9 +230,7 @@
     });
 
     if (window.opener && !window.opener.closed) {
-        sendMessage(window.opener, VIEWER_ORIGIN, {
-            action: "ready"
-        });
+        notifyViewerReady();
     }
 
     console.log("CHUNI Simple Bridge 已安裝。");

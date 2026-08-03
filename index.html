@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>CHUNITHM 成績測試</title>
+
+    <style>
+        body {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            font-family:
+                "Microsoft JhengHei",
+                "Noto Sans TC",
+                sans-serif;
+        }
+
+        button {
+            margin-right: 8px;
+            padding: 10px 16px;
+            cursor: pointer;
+        }
+
+        #status {
+            margin: 20px 0;
+            padding: 12px;
+            background: #f2f2f2;
+            border-radius: 6px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #f5f5f5;
+        }
+
+        .error {
+            color: #b00020;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>CHUNITHM Master 成績</h1>
+
+    <p>
+        先開啟並登入 CHUNITHM-NET，
+        再於官方頁面執行 bridge 工具。
+    </p>
+
+    <button id="openChuni">
+        開啟 CHUNITHM-NET
+    </button>
+
+    <button id="requestMaster">
+        取得 Master 成績
+    </button>
+
+    <div id="status">
+        尚未連線
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>歌曲</th>
+                <th>分數</th>
+                <th>狀態</th>
+                <th>IDX</th>
+            </tr>
+        </thead>
+
+        <tbody id="records"></tbody>
+    </table>
+
+    <script src="./viewer.js"></script>
+</body>
+</html>

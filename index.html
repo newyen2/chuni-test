@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-TW" data-app-version="v1.1.0">
+<html lang="zh-TW" data-app-version="v1.2.0">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,10 +17,98 @@
         }
 
         body {
-            max-width: 900px;
+            max-width: 1200px;
             margin: 40px auto;
             padding: 0 20px;
             color: #242424;
+        }
+
+        .app-shell {
+            display: grid;
+            grid-template-columns: 210px minmax(0, 1fr);
+            gap: 28px;
+            align-items: start;
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 24px;
+            padding: 18px 14px;
+            border: 1px solid #d9dfe7;
+            border-radius: 12px;
+            background: #f8fbff;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 4px 18px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #dce3ec;
+        }
+
+        .sidebar-brand-mark {
+            display: grid;
+            place-items: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 9px;
+            background: #2867b2;
+            color: #fff;
+            font-weight: 800;
+        }
+
+        .sidebar-brand-text strong,
+        .sidebar-brand-text small {
+            display: block;
+        }
+
+        .sidebar-brand-text small {
+            margin-top: 2px;
+            color: #777;
+            font-size: 0.75rem;
+        }
+
+        .sidebar-nav {
+            display: grid;
+            gap: 6px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 12px;
+            border-radius: 8px;
+            color: #4c5560;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .sidebar-link:hover {
+            background: #eef4fb;
+            color: #2867b2;
+        }
+
+        .sidebar-link[aria-current="page"] {
+            background: #2867b2;
+            color: #fff;
+            box-shadow: 0 3px 10px rgb(40 103 178 / 22%);
+        }
+
+        .sidebar-link-icon {
+            display: grid;
+            place-items: center;
+            width: 25px;
+            height: 25px;
+            border-radius: 6px;
+            background: rgb(255 255 255 / 20%);
+            font-size: 0.82rem;
+        }
+
+        .content {
+            min-width: 0;
         }
 
         h1 {
@@ -409,6 +497,32 @@
             color: #b00020;
         }
 
+        @media (max-width: 820px) {
+            .app-shell {
+                display: block;
+            }
+
+            .sidebar {
+                position: static;
+                margin-bottom: 22px;
+                padding: 12px;
+            }
+
+            .sidebar-brand {
+                margin-bottom: 10px;
+                padding-bottom: 10px;
+            }
+
+            .sidebar-nav {
+                display: flex;
+                overflow-x: auto;
+            }
+
+            .sidebar-link {
+                flex: 0 0 auto;
+            }
+        }
+
         @media (max-width: 600px) {
             body {
                 margin: 24px auto;
@@ -437,10 +551,28 @@
 </head>
 
 <body>
-    <main>
+    <div class="app-shell">
+        <aside class="sidebar" aria-label="側邊欄">
+            <div class="sidebar-brand">
+                <span class="sidebar-brand-mark" aria-hidden="true">C</span>
+                <span class="sidebar-brand-text">
+                    <strong>CHUNITHM</strong>
+                    <small>個人成績工具</small>
+                </span>
+            </div>
+
+            <nav class="sidebar-nav" aria-label="主要功能">
+                <a class="sidebar-link" href="./" aria-current="page">
+                    <span class="sidebar-link-icon" aria-hidden="true">成</span>
+                    <span>成績查詢</span>
+                </a>
+            </nav>
+        </aside>
+
+        <main class="content">
         <div class="page-meta">
             <span class="version-badge" aria-label="目前網頁版本">
-                Version <strong id="appVersion">v1.1.0</strong>
+                Version <strong id="appVersion">v1.2.0</strong>
             </span>
         </div>
 
@@ -609,7 +741,8 @@ document.head.appendChild(script);</code></pre>
                 <tbody id="records"></tbody>
             </table>
         </div>
-    </main>
+        </main>
+    </div>
 
     <script>
         (() => {

@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="zh-TW" data-app-version="v1.2.0">
+<html lang="zh-TW" data-app-version="v1.4.0">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>CHUNITHM 成績測試</title>
+    <title>CHUNITHM 成績查詢</title>
 
     <style>
         :root {
@@ -546,6 +546,7 @@
             .action-button {
                 flex: 1 1 100%;
             }
+
         }
     </style>
 </head>
@@ -562,9 +563,13 @@
             </div>
 
             <nav class="sidebar-nav" aria-label="主要功能">
-                <a class="sidebar-link" href="./" aria-current="page">
+                <a class="sidebar-link" href="./index.html" aria-current="page">
                     <span class="sidebar-link-icon" aria-hidden="true">成</span>
                     <span>成績查詢</span>
+                </a>
+                <a class="sidebar-link" href="./music.html">
+                    <span class="sidebar-link-icon" aria-hidden="true">曲</span>
+                    <span>歌曲查詢</span>
                 </a>
             </nav>
         </aside>
@@ -572,10 +577,11 @@
         <main class="content">
         <div class="page-meta">
             <span class="version-badge" aria-label="目前網頁版本">
-                Version <strong id="appVersion">v1.2.0</strong>
+                Version <strong id="appVersion">v1.4.0</strong>
             </span>
         </div>
 
+        <section id="recordsPage">
         <h1>CHUNITHM 成績</h1>
 
         <fieldset class="difficulty-filter">
@@ -617,7 +623,9 @@
                 <span class="data-status-badge" data-difficulty="MAS">○ MASTER 尚未取得</span>
                 <span class="data-status-badge" data-difficulty="ULT">○ ULTIMA 尚未取得</span>
             </div>
-            <small class="data-status-help">此處也會顯示從 LocalStorage 快取載入的難度。</small>
+            <small id="storagePersistenceStatus" class="data-status-help">
+                LocalStorage 快取不會由本站自動過期；實際保存仍取決於瀏覽器的儲存政策。
+            </small>
         </section>
 
         <details class="guide">
@@ -741,11 +749,18 @@ document.head.appendChild(script);</code></pre>
                 <tbody id="records"></tbody>
             </table>
         </div>
+        </section>
+
         </main>
     </div>
 
     <script>
         (() => {
+            if (window.location.hash === "#music") {
+                window.location.replace("./music.html");
+                return;
+            }
+
             // 每次更新功能時，只需遞增 <html> 上的 data-app-version。
             // 畫面版本與 viewer.js 快取版本會自動同步。
             const version = document.documentElement.dataset.appVersion;

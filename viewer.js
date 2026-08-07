@@ -3,7 +3,6 @@
 const CHUNI_ORIGIN = "https://chunithm-net-eng.com";
 const CACHE_PREFIX = "chuni_records_cache_v2_";
 const LEGACY_MASTER_CACHE_KEY = "chuni_master_records_cache_v1";
-const CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
 const REQUEST_TIMEOUT = 60 * 1000;
 
 const DIFFICULTIES = Object.freeze({
@@ -31,6 +30,9 @@ const selectedDifficulties = new Set(DIFFICULTY_KEYS);
 const statusElement = document.querySelector("#status");
 const recordsElement = document.querySelector("#records");
 const requestButton = document.querySelector("#requestRecords");
+const storagePersistenceStatusElement = document.querySelector(
+    "#storagePersistenceStatus"
+);
 const copyBridgeCodeButton = document.querySelector("#copyBridgeCode");
 const bridgeCodeElement = document.querySelector("#bridgeCode");
 const selectAllButton = document.querySelector("#selectAllDifficulties");
@@ -62,6 +64,26 @@ function getCacheKey(difficulty) {
 function setStatus(message, isError = false) {
     statusElement.textContent = message;
     statusElement.classList.toggle("error", isError);
+}
+
+async function requestPersistentStorage() {
+    if (!navigator.storage?.persist) {
+        return;
+    }
+
+    try {
+        const alreadyPersisted = navigator.storage.persisted
+            ? await navigator.storage.persisted()
+            : false;
+        const persisted = alreadyPersisted
+            || await navigator.storage.persist();
+
+        storagePersistenceStatusElement.textContent = persisted
+            ? "LocalStorage 快取不會由本站自動過期，瀏覽器也已允許持久化儲存。"
+            : "LocalStorage 快取不會由本站自動過期；請避免手動清除本站資料或使用無痕模式。";
+    } catch (error) {
+        console.warn("無法確認瀏覽器的持久化儲存狀態：", error);
+    }
 }
 
 async function copyBridgeCode() {
@@ -277,7 +299,7 @@ function saveRecordsToCache(difficulty, records) {
     }
 }
 
-function loadRecordsFromCache(difficulty, allowExpired = false) {
+function loadRecordsFromCache(difficulty) {
     let rawCache;
 
     try {
@@ -308,17 +330,11 @@ function loadRecordsFromCache(difficulty, allowExpired = false) {
         }
 
         const age = Date.now() - cache.savedAt;
-        const expired = age >= CACHE_MAX_AGE;
-
-        if (expired && !allowExpired) {
-            return null;
-        }
 
         return {
             records: cache.records,
             savedAt: cache.savedAt,
-            age,
-            expired
+            age
         };
     } catch (error) {
         console.error("解析快取失敗：", error);
@@ -359,8 +375,7 @@ function setDifficultyData(
 function updateLoadedDifficultyStatus() {
     const sourceLabels = {
         network: "最新",
-        cache: "快取",
-        "expired-cache": "舊快取"
+        cache: "快取"
     };
 
     for (const badge of dataStatusBadges) {
@@ -386,7 +401,7 @@ function loadAllFreshCaches() {
     const loadedDifficulties = [];
 
     for (const difficulty of DIFFICULTY_KEYS) {
-        const cache = loadRecordsFromCache(difficulty, false);
+        const cache = loadRecordsFromCache(difficulty);
 
         if (!cache) {
             continue;
@@ -655,14 +670,14 @@ window.addEventListener("message", event => {
             console.warn(`${getDifficultyLabel(difficulty)} 成績無法寫入快取。`);
         }
     } else {
-        const expiredCache = loadRecordsFromCache(difficulty, true);
+        const cachedRecords = loadRecordsFromCache(difficulty);
 
-        if (expiredCache && !recordsByDifficulty.has(difficulty)) {
+        if (cachedRecords && !recordsByDifficulty.has(difficulty)) {
             setDifficultyData(
                 difficulty,
-                expiredCache.records,
-                "expired-cache",
-                expiredCache.savedAt
+                cachedRecords.records,
+                "cache",
+                cachedRecords.savedAt
             );
         }
     }
@@ -674,3 +689,4 @@ window.addEventListener("message", event => {
 
 updateSortHeaders();
 loadAllFreshCaches();
+requestPersistentStorage();
